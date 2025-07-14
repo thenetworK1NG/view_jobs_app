@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Posted Jobs</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6fb;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+            padding: 32px 40px 40px 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #2d3a4b;
+            margin-bottom: 24px;
+        }
+        #jobsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        #jobsTable th, #jobsTable td {
+            padding: 7px 6px;
+            font-size: 0.97rem;
+            border-bottom: 1px solid #e0e6ed;
+            text-align: left;
+            word-break: break-word;
+            max-width: 120px;
+        }
+        #jobsTable th {
+            background: #f0f4fa;
+            color: #2d3a4b;
+            font-size: 1.01rem;
+        }
+        #jobsTable tr:last-child td {
+            border-bottom: none;
+        }
+        #status {
+            text-align: center;
+            color: #b23c3c;
+            margin-top: 10px;
+        }
+        .person-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(44, 62, 80, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .person-modal-content {
+            background: #fff;
+            padding: 32px 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+            text-align: center;
+        }
+        .person-modal-content h2 {
+            margin-bottom: 18px;
+            color: #2d3a4b;
+        }
+        .person-select {
+            padding: 10px 16px;
+            font-size: 1rem;
+            border-radius: 6px;
+            border: 1px solid #cfd8dc;
+            margin-bottom: 18px;
+            width: 70%;
+        }
+        .select-btn {
+            background: #2d7ff9;
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .change-person-btn {
+            float: right;
+            background: #e0e6ed;
+            color: #2d3a4b;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+        @media (max-width: 1100px) {
+            #jobsTable th, #jobsTable td {
+                font-size: 0.92rem;
+                padding: 5px 3px;
+                max-width: 90px;
+            }
+        }
+        @media (max-width: 700px) {
+            #jobsTable th, #jobsTable td {
+                font-size: 0.85rem;
+                padding: 4px 2px;
+                max-width: 60px;
+            }
+        }
+        .client-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 32px 0 24px 0;
+        }
+        .client-list .client-name {
+            background: linear-gradient(90deg, #a084ee 0%, #8ec5fc 100%);
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 18px 32px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(160, 132, 238, 0.10);
+            transition: background 0.2s, transform 0.15s;
+            border: none;
+            outline: none;
+            text-align: left;
+        }
+        .client-list .client-name:hover {
+            background: linear-gradient(90deg, #8ec5fc 0%, #a084ee 100%);
+            transform: translateY(-2px) scale(1.03);
+        }
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(44, 62, 80, 0.18);
+            display: flex;
+        }
+        .a4-modal-content {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 32px rgba(31, 38, 135, 0.18);
+            padding: 40px 48px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            margin: 32px auto;
+            font-family: 'Poppins', Arial, sans-serif;
+        }
+        .a4-modal-content h2 {
+            text-align: center;
+            color: #4f2e7d;
+            margin-bottom: 24px;
+            font-size: 2rem;
+        }
+        .a4-job-details {
+            border: 1.5px solid #a084ee;
+            border-radius: 10px;
+            margin-bottom: 32px;
+            padding: 24px 28px;
+            background: rgba(232, 240, 255, 0.18);
+            box-shadow: 0 2px 8px rgba(160, 132, 238, 0.07);
+        }
+        .a4-job-details h3 {
+            color: #5a189a;
+            margin-bottom: 10px;
+            font-size: 1.15rem;
+        }
+        .a4-job-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .a4-job-details td, .a4-job-details th {
+            padding: 7px 8px;
+            border-bottom: 1px solid #e0e6ed;
+            font-size: 1rem;
+        }
+        .a4-job-details th {
+            background: #f0f4fa;
+            color: #2d3a4b;
+            font-weight: 600;
+        }
+        .a4-job-details tr:last-child td {
+            border-bottom: none;
+        }
+        .close-modal-btn {
+            position: absolute;
+            top: 18px;
+            right: 32px;
+            font-size: 1.6rem;
+            background: none;
+            border: none;
+            color: #a084ee;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        @media (max-width: 900px) {
+            .a4-modal-content {
+                padding: 18px 4vw;
+            }
+        }
+        @media (max-width: 600px) {
+            .a4-modal-content {
+                padding: 8px 2vw;
+            }
+        }
+        #openRecycleBinBtn svg {
+            transition: transform 0.15s;
+        }
+        #openRecycleBinBtn:hover svg {
+            transform: scale(1.15) rotate(-8deg);
+            filter: drop-shadow(0 2px 6px #b23c3c33);
+        }
+        #recycleBinModal .a4-modal-content {
+            background: #fff8f8;
+            border: 2px solid #b23c3c33;
+        }
+        #recycleBinModal h2 {
+            color: #b23c3c;
+        }
+        #recycleTable th, #recycleTable td {
+            padding: 7px 6px;
+            font-size: 0.97rem;
+            border-bottom: 1px solid #e0e6ed;
+            text-align: left;
+            word-break: break-word;
+            max-width: 120px;
+        }
+        #recycleTable th {
+            background: #fbeaea;
+            color: #b23c3c;
+            font-size: 1.01rem;
+        }
+        #recycleTable tr:last-child td {
+            border-bottom: none;
+        }
+        .restore-btn {
+            background: #2d7ff9;
+            color: #fff;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 7px;
+            font-size: 0.98rem;
+            cursor: pointer;
+            transition: background 0.18s;
+        }
+        .restore-btn:hover {
+            background: #1a5bb8;
+        }
+        .delete-forever-btn {
+            background: #b23c3c;
+            color: #fff;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 7px;
+            font-size: 0.98rem;
+            cursor: pointer;
+            transition: background 0.18s;
+        }
+        .delete-forever-btn:hover {
+            background: #7a2323;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="currentUserDisplay" style="text-align:center;font-size:1.2rem;font-weight:600;color:#7c3aed;margin-bottom:10px;"></div>
+        <button class="change-person-btn" id="changePersonBtn" style="display:none;">Change Person</button>
+        <h1>Clients
+            <button id="openRecycleBinBtn" title="View Trash" style="background:none;border:none;cursor:pointer;vertical-align:middle;margin-left:18px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#b23c3c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+            <button id="openLogBtn" title="View Log" style="background:none;border:none;cursor:pointer;vertical-align:middle;margin-left:10px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4f2e7d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+            </button>
+            <button id="homeBtn" title="Go Home" style="background:none;border:none;cursor:pointer;vertical-align:middle;margin-left:10px;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="#10b981" stroke="#0891b2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 11.5L12 4l9 7.5V20a2 2 0 0 1-2 2h-3.5a.5.5 0 0 1-.5-.5V16a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5.5a.5.5 0 0 1-.5.5H5a2 2 0 0 1-2-2V11.5z"/>
+                </svg>
+            </button>
+        </h1>
+        <div id="searchContainer" style="margin-bottom:20px;display:none;">
+            <input type="text" id="customerSearchInput" placeholder="Search customers by name..." style="width:100%;padding:12px;font-size:1rem;border-radius:8px;border:1.5px solid #7c3aed;">
+        </div>
+        <div id="clientList" class="client-list"></div>
+        <div id="status"></div>
+    </div>
+    <div class="modal" id="recycleBinModal" style="display:none;align-items:center;justify-content:center;z-index:3000;">
+        <div class="a4-modal-content" style="max-width:1100px;width:98vw;position:relative;">
+            <button class="close-modal-btn" id="closeRecycleBinBtn" style="top:18px;right:32px;">&times;</button>
+            <h2 style="color:#b23c3c;text-align:center;">Recycle Bin</h2>
+            <div class="table-responsive" style="overflow-x:auto;">
+                <table id="recycleTable" style="width:100%;margin-bottom:16px;">
+                    <thead>
+                        <tr>
+                            <th>Customer Name</th>
+                            <th>Date</th>
+                            <th>Customer Cell Number</th>
+                            <th>Description</th>
+                            <th>Assigned To</th>
+                            <th>Notes</th>
+                            <th>Deleted On</th>
+                            <th>Restore</th>
+                            <th>Delete Forever</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="recycleStatus"></div>
+        </div>
+    </div>
+    <div class="modal" id="clientModal" style="display:none;align-items:center;justify-content:center;z-index:2000;">
+        <div class="a4-modal-content" id="clientModalContent"></div>
+    </div>
+    <div class="person-modal" id="personModal" style="display:flex;">
+        <div class="person-modal-content">
+            <h2>Select a Person to View Job Cards</h2>
+            <select class="person-select" id="personSelect">
+                <option value="">Loading...</option>
+            </select>
+            <br>
+            <button class="select-btn" id="selectPersonBtn">View Jobs</button>
+        </div>
+    </div>
+    <div class="modal" id="descModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);align-items:center;justify-content:center;z-index:2000;">
+        <div style="background:#fff;padding:32px 24px;border-radius:10px;max-width:500px;width:90%;max-height:80vh;overflow:auto;position:relative;">
+            <button id="closeDescModal" style="position:absolute;top:10px;right:10px;font-size:1.2em;cursor:pointer;background:none;border:none;">&times;</button>
+            <h3>Description</h3>
+            <div id="descModalContent" style="margin-bottom:18px;white-space:pre-wrap;"></div>
+            <h4>Notes</h4>
+            <textarea id="jobNotesInput" rows="4" style="width:100%;border-radius:6px;border:1px solid #cfd8dc;padding:8px;"></textarea>
+            <button id="saveNotesBtn" style="margin-top:10px;background:#2d7ff9;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;">Save Notes</button>
+        </div>
+    </div>
+    <div class="modal" id="logModal" style="display:none;align-items:center;justify-content:center;z-index:3500;">
+        <div class="a4-modal-content" style="max-width:900px;width:98vw;position:relative;">
+            <button class="close-modal-btn" id="closeLogModalBtn" style="top:18px;right:32px;">&times;</button>
+            <h2 style="color:#4f2e7d;text-align:center;">Action Log</h2>
+            <div class="table-responsive" style="overflow-x:auto;">
+                <table id="logTable" style="width:100%;margin-bottom:16px;">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Job/Client</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button id="clearLogBtn" class="btn" style="margin-bottom:12px;">Clear Log File</button>
+            <div id="clearLogPasswordModal" class="person-modal" style="display:none;">
+                <div class="person-modal-content">
+                    <h2>Enter Password to Clear Log</h2>
+                    <input type="password" id="clearLogPasswordInput" placeholder="Password">
+                    <div style="margin-top:16px;">
+                        <button id="submitClearLogPassword" class="btn">Submit</button>
+                        <button id="cancelClearLogPassword" class="btn" style="background:#888;margin-left:8px;">Cancel</button>
+                    </div>
+                    <div id="clearLogPasswordStatus" style="color:#b23c3c;margin-top:10px;"></div>
+                </div>
+            </div>
+            <div id="logStatus"></div>
+        </div>
+    </div>
+    <script type="module" src="view-jobs.js"></script>
+</body>
+</html> 
